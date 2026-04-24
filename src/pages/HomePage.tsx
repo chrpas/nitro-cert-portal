@@ -2,13 +2,23 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { ArrowRight, BookOpen, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
-import { curriculumHierarchy } from '../data/curriculum';
 import { useProgress } from '../hooks/useProgress';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../db/db';
 
 export const HomePage: React.FC = () => {
   const { getModuleProgress, getTotalProgress } = useProgress();
+  const modules = useLiveQuery(() => db.modules.orderBy('order').toArray());
   
-  const totalItems = curriculumHierarchy.reduce((acc, m) => 
+  if (modules === undefined) {
+    return (
+      <div className="container" style={{ paddingBottom: '8rem', paddingTop: '4rem', textAlign: 'center' }}>
+        <p>Loading Portal Data...</p>
+      </div>
+    );
+  }
+
+  const totalItems = modules.reduce((acc, m) => 
     acc + m.sections.reduce((sAcc, s) => sAcc + s.items.length, 0), 0
   );
   const totalPercentage = getTotalProgress(totalItems);
@@ -78,12 +88,13 @@ export const HomePage: React.FC = () => {
       {/* Modules Grid */}
       <h2 style={{ fontSize: '2.5rem', marginBottom: '3rem' }}>Learning Modules</h2>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '2rem' }}>
-        {curriculumHierarchy.map((module) => {
+        {modules.map((module) => {
           const totalModuleItems = module.sections.reduce((acc, s) => acc + s.items.length, 0);
           const moduleProgress = getModuleProgress(module.id, totalModuleItems);
           
           return (
               <Link 
+                key={module.id}
                 to={`/module/${module.id}`} 
                 style={{ display: 'block' }}
               >

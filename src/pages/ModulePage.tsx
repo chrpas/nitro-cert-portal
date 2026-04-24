@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, ChevronRight, List, ArrowLeft } from 'lucide-react';
-import { curriculumHierarchy } from '../data/curriculum';
 import { useProgress } from '../hooks/useProgress';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../db/db';
@@ -13,18 +12,26 @@ export const ModulePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const { isItemCompleted, toggleItem, getModuleProgress } = useProgress();
   const [selectedArticle, setSelectedArticle] = useState<string | null>(null);
-  
-  const module = curriculumHierarchy.find(m => m.id === id);
+  const module = useLiveQuery(() => db.modules.get(id || ''));
+  const allModules = useLiveQuery(() => db.modules.orderBy('order').toArray());
 
-  if (!module) return <div>Module not found</div>;
+  const activeContent = useLiveQuery(() => {
+    if (!selectedArticle) return Promise.resolve(undefined);
+    return db.articles.get(selectedArticle.replace(/\//g, ' '));
+  }, [selectedArticle]);
+
+  if (module === undefined || allModules === undefined) {
+    return (
+      <div className="container" style={{ paddingBottom: '8rem', paddingTop: '4rem', textAlign: 'center' }}>
+        <p>Loading module data...</p>
+      </div>
+    );
+  }
+
+  if (!module) return null;
 
   const totalModuleItems = module.sections.reduce((acc, s) => acc + s.items.length, 0);
   const currentModuleProgress = getModuleProgress(module.id, totalModuleItems);
-
-  const activeContent = useLiveQuery(() => {
-    if (!selectedArticle) return null;
-    return db.articles.get(selectedArticle.replace(/\//g, ' '));
-  }, [selectedArticle]);
 
   return (
     <div className="container">
@@ -112,12 +119,22 @@ export const ModulePage: React.FC = () => {
                </div>
             </div>
 
+            {module.examQuestions && module.examQuestions.length > 0 && (
+              <Link 
+                to={`/module-exam/${module.id}`} 
+                className="btn-primary" 
+                style={{ justifyContent: 'center', background: 'var(--accent)' }}
+              >
+                Take Module Exam
+              </Link>
+            )}
+
             <div className="glass-card" style={{ padding: '2rem' }}>
               <h3 style={{ fontSize: '0.8rem', textTransform: 'uppercase', color: 'var(--primary)', letterSpacing: '0.1em', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <List size={14} /> Curriculum Links
               </h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                {curriculumHierarchy.map(m => (
+                {allModules.map(m => (
                   <Link 
                     key={m.id} 
                     to={`/module/${m.id}`}

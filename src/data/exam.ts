@@ -1,14 +1,9 @@
-export interface Question {
-  id: number;
-  text: string;
-  options: string[];
-  correctAnswer: number;
-  explanation: string;
-}
+import { Question } from '../db/db';
 
 export const examQuestions: Question[] = [
   {
     id: 1,
+    type: 'single',
     text: "What is the primary purpose of Nitro in the Avensia ecosystem?",
     options: [
       "A standalone CRM system",
@@ -21,6 +16,7 @@ export const examQuestions: Question[] = [
   },
   {
     id: 2,
+    type: 'single',
     text: "Which package is responsible for Nitro's Single Page Application (SPA) behavior?",
     options: [
       "Avensia.Nitro5.Core",
@@ -33,6 +29,7 @@ export const examQuestions: Question[] = [
   },
   {
     id: 3,
+    type: 'single',
     text: "How does Nitro handle Server-Side Rendering (SSR)?",
     options: [
       "Using Next.js",
@@ -45,6 +42,7 @@ export const examQuestions: Question[] = [
   },
   {
     id: 4,
+    type: 'single',
     text: "What is the purpose of the @ComponentFor pragma in Nitro React units?",
     options: [
       "To define CSS styles",
@@ -57,6 +55,7 @@ export const examQuestions: Question[] = [
   },
   {
     id: 5,
+    type: 'single',
     text: "Which variable in the frontend contains global data like the main menu and site settings?",
     options: [
       "CURRENT_PAGE",
@@ -69,6 +68,7 @@ export const examQuestions: Question[] = [
   },
   {
     id: 6,
+    type: 'single',
     text: "What is the recommended tool for tracking backend and frontend errors in a Nitro project?",
     options: [
       "Log4Net",
@@ -81,6 +81,7 @@ export const examQuestions: Question[] = [
   },
   {
     id: 7,
+    type: 'boolean',
     text: "True or False: In Nitro5, all jobs must implement the INitroJob interface.",
     options: [
       "True",
@@ -91,6 +92,7 @@ export const examQuestions: Question[] = [
   },
   {
     id: 8,
+    type: 'single',
     text: "What happens during 'Hydration' in the Nitro lifecycle?",
     options: [
       "The database is refreshed with mock data",

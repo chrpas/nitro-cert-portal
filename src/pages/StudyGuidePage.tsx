@@ -1,10 +1,21 @@
 import React from 'react';
 import { motion } from 'framer-motion';
 import { Download, FileText } from 'lucide-react';
-import { curriculumHierarchy } from '../data/curriculum';
 import { Link } from 'react-router-dom';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../db/db';
 
 export const StudyGuidePage: React.FC = () => {
+  const modules = useLiveQuery(() => db.modules.orderBy('order').toArray());
+
+  if (modules === undefined) {
+    return (
+      <div className="container" style={{ paddingBottom: '8rem', paddingTop: '4rem', textAlign: 'center' }}>
+        <p>Loading Curriculum Data...</p>
+      </div>
+    );
+  }
+
   return (
     <div className="container" style={{ paddingBottom: '8rem' }}>
       <header style={{ marginBottom: '6rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
@@ -20,7 +31,7 @@ export const StudyGuidePage: React.FC = () => {
       </header>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: '6rem' }}>
-        {curriculumHierarchy.map((module, index) => (
+        {modules.map((module, index) => (
           <motion.section 
             key={module.id}
             initial={{ opacity: 0, y: 20 }}

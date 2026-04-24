@@ -1,23 +1,48 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, XCircle, RefreshCcw, ArrowRight, Trophy, AlertCircle } from 'lucide-react';
+import { CheckCircle2, XCircle, RefreshCcw, ArrowRight, Trophy, AlertCircle, Square, CheckSquare } from 'lucide-react';
 import { examQuestions } from '../data/exam';
 import { Link } from 'react-router-dom';
+import { Question } from '../db/db';
 
 export const ExamPage: React.FC = () => {
   const [currentStep, setCurrentStep] = useState(0);
-  const [selectedAnswer, setSelectedAnswer] = useState<number | null>(null);
+  const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
   const [isAnswered, setIsAnswered] = useState(false);
   const [score, setScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
 
-  const currentQuestion = examQuestions[currentStep];
+  const q = examQuestions[currentStep];
 
-  const handleAnswer = (index: number) => {
+  const handleToggleAnswer = (index: number) => {
     if (isAnswered) return;
-    setSelectedAnswer(index);
+
+    if (q.type === 'multiple') {
+      setSelectedAnswers(prev => 
+        prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
+      );
+    } else {
+      setSelectedAnswers([index]);
+      const isCorrect = index === q.correctAnswer;
+      validateAnswer([index], isCorrect);
+    }
+  };
+
+  const validateAnswer = (choices: number[], forceIsCorrect?: boolean) => {
     setIsAnswered(true);
-    if (index === currentQuestion.correctAnswer) {
+    let correct = false;
+    
+    if (forceIsCorrect !== undefined) {
+      correct = forceIsCorrect;
+    } else if (Array.isArray(q.correctAnswer)) {
+      const correctSet = new Set(q.correctAnswer);
+      const chosenSet = new Set(choices);
+      correct = correctSet.size === chosenSet.size && [...correctSet].every(val => chosenSet.has(val));
+    } else {
+      correct = choices[0] === q.correctAnswer;
+    }
+
+    if (correct) {
       setScore(prev => prev + 1);
     }
   };
@@ -25,7 +50,7 @@ export const ExamPage: React.FC = () => {
   const nextQuestion = () => {
     if (currentStep < examQuestions.length - 1) {
       setCurrentStep(prev => prev + 1);
-      setSelectedAnswer(null);
+      setSelectedAnswers([]);
       setIsAnswered(false);
     } else {
       setShowResults(true);
@@ -34,10 +59,17 @@ export const ExamPage: React.FC = () => {
 
   const resetExam = () => {
     setCurrentStep(0);
-    setSelectedAnswer(null);
+    setSelectedAnswers([]);
     setIsAnswered(false);
     setScore(0);
     setShowResults(false);
+  };
+
+  const getReviewText = (question: Question) => {
+    if (Array.isArray(question.correctAnswer)) {
+      return question.correctAnswer.map(i => question.options[i]).join(', ');
+    }
+    return question.options[question.correctAnswer as number];
   };
 
   if (showResults) {
@@ -51,41 +83,41 @@ export const ExamPage: React.FC = () => {
           style={{ padding: '4rem', textAlign: 'center', marginBottom: '4rem' }}
         >
           <Trophy size={64} color="var(--primary)" style={{ marginBottom: '2rem' }} />
-          <h1 style={{ fontSize: '3rem', marginBottom: '1rem' }}>Exam Complete!</h1>
+          <h1 style={{ fontSize: '3rem', marginBottom: '1rem' }}>Certification Results</h1>
           <div style={{ fontSize: '1.5rem', marginBottom: '2rem', color: 'var(--text-muted)' }}>
-            Your Score: <span className="gradient-text" style={{ fontWeight: 800, fontSize: '4rem' }}>{percentage}%</span>
+            Overall Score: <span className="gradient-text" style={{ fontWeight: 800, fontSize: '4rem' }}>{percentage}%</span>
           </div>
           <p style={{ marginBottom: '3rem', fontSize: '1.1rem' }}>
             {percentage >= 80 
-              ? "Outstanding! You're ready for the official Nitro Certification." 
-              : "Good effort. Review the answer key below to sharpen your knowledge."}
+              ? "Outstanding! You've officially mastered the Nitro5 fundamentals." 
+              : "A solid effort. Review the technical explanations below to refine your expertise."}
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
             <button onClick={resetExam} className="glass-card" style={{ padding: '1rem 2rem', color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <RefreshCcw size={18} /> Retake Exam
+              <RefreshCcw size={18} /> Retake Certification
             </button>
             <Link to="/" className="btn-primary" style={{ padding: '1rem 2rem' }}>
-              Back to Portal
+              Return to Portal
             </Link>
           </div>
         </motion.div>
 
-        <h2 style={{ fontSize: '2rem', marginBottom: '2rem' }}>Answer Key & Explanations</h2>
+        <h2 style={{ fontSize: '2rem', marginBottom: '2rem' }}>Knowledge Deep-Dive</h2>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
           {examQuestions.map((q, idx) => (
             <div key={q.id} className="glass-card" style={{ padding: '2rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                 <h4 style={{ fontSize: '1.2rem', maxWidth: '80%' }}>{idx + 1}. {q.text}</h4>
                 <div style={{ padding: '0.4rem 0.8rem', borderRadius: '10px', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', fontSize: '0.8rem', fontWeight: 700 }}>
-                  CORRECT
+                  VALIDATED
                 </div>
               </div>
               <p style={{ color: 'var(--text)', marginBottom: '1.5rem', fontWeight: 600 }}>
-                Answer: <span style={{ color: '#10b981' }}>{q.options[q.correctAnswer]}</span>
+                Mastery Key: <span style={{ color: '#10b981' }}>{getReviewText(q)}</span>
               </p>
               <div style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-sm)', borderLeft: '4px solid var(--primary)' }}>
                 <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: '1.6' }}>
-                  <strong style={{ color: 'var(--text)' }}>Explanation:</strong> {q.explanation}
+                  <strong style={{ color: 'var(--text)' }}>Technical Rationale:</strong> {q.explanation}
                 </p>
               </div>
             </div>
@@ -98,7 +130,7 @@ export const ExamPage: React.FC = () => {
   return (
     <div className="container" style={{ maxWidth: '800px' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
-        <span style={{ fontWeight: 600, color: 'var(--primary)' }}>QUESTION {currentStep + 1} OF {examQuestions.length}</span>
+        <span style={{ fontWeight: 600, color: 'var(--primary)' }}>OBJECTIVE {currentStep + 1} OF {examQuestions.length}</span>
         <div style={{ width: '200px', height: '6px', background: 'var(--border)', borderRadius: '3px', overflow: 'hidden' }}>
           <div style={{ width: `${((currentStep + 1) / examQuestions.length) * 100}%`, height: '100%' }} className="gradient-bg" />
         </div>
@@ -112,29 +144,36 @@ export const ExamPage: React.FC = () => {
           exit={{ opacity: 0, x: -20 }}
           transition={{ duration: 0.3 }}
         >
-          <h2 style={{ fontSize: '2rem', marginBottom: '3rem' }}>{currentQuestion.text}</h2>
+          <h2 style={{ fontSize: '2rem', marginBottom: '3rem' }}>{q.text}</h2>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {currentQuestion.options.map((option, index) => {
+            {q.options.map((option, index) => {
+              const isSelected = selectedAnswers.includes(index);
+              const isCorrectAnswer = Array.isArray(q.correctAnswer) ? q.correctAnswer.includes(index) : q.correctAnswer === index;
+              
+              let status = 'none';
+              if (isAnswered) {
+                if (isCorrectAnswer) status = 'correct';
+                else if (isSelected) status = 'wrong';
+              }
+
               let borderColor = 'var(--border)';
               let bgColor = 'rgba(255, 255, 255, 0.03)';
               
-              if (isAnswered) {
-                if (index === currentQuestion.correctAnswer) {
-                  borderColor = '#10b981';
-                  bgColor = 'rgba(16, 185, 129, 0.1)';
-                } else if (index === selectedAnswer) {
-                  borderColor = '#ef4444';
-                  bgColor = 'rgba(239, 68, 68, 0.1)';
-                }
-              } else if (selectedAnswer === index) {
+              if (status === 'correct') {
+                borderColor = '#10b981';
+                bgColor = 'rgba(16, 185, 129, 0.1)';
+              } else if (status === 'wrong') {
+                borderColor = '#ef4444';
+                bgColor = 'rgba(239, 68, 68, 0.1)';
+              } else if (isSelected && !isAnswered) {
                 borderColor = 'var(--primary)';
               }
 
               return (
                 <button
                   key={index}
-                  onClick={() => handleAnswer(index)}
+                  onClick={() => handleToggleAnswer(index)}
                   className="glass-card"
                   style={{
                     padding: '1.5rem',
@@ -146,16 +185,33 @@ export const ExamPage: React.FC = () => {
                     background: bgColor,
                     display: 'flex',
                     justifyContent: 'space-between',
-                    alignItems: 'center'
+                    alignItems: 'center',
+                    cursor: isAnswered ? 'default' : 'pointer'
                   }}
                 >
-                  {option}
-                  {isAnswered && index === currentQuestion.correctAnswer && <CheckCircle2 color="#10b981" size={20} />}
-                  {isAnswered && index === selectedAnswer && index !== currentQuestion.correctAnswer && <XCircle color="#ef4444" size={20} />}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                    {q.type === 'multiple' && (
+                      isSelected ? <CheckSquare size={20} color="var(--primary)" /> : <Square size={20} color="var(--text-muted)" />
+                    )}
+                    {option}
+                  </div>
+                  {status === 'correct' && <CheckCircle2 color="#10b981" size={20} />}
+                  {status === 'wrong' && <XCircle color="#ef4444" size={20} />}
                 </button>
               );
             })}
           </div>
+
+          {!isAnswered && q.type === 'multiple' && (
+            <button 
+              disabled={selectedAnswers.length === 0}
+              onClick={() => validateAnswer(selectedAnswers)}
+              className="btn-primary"
+              style={{ marginTop: '2rem', width: '100%', justifyContent: 'center' }}
+            >
+              Verify Objective
+            </button>
+          )}
 
           <AnimatePresence>
             {isAnswered && (
@@ -166,14 +222,14 @@ export const ExamPage: React.FC = () => {
               >
                 <div style={{ padding: '2rem', borderRadius: 'var(--radius-md)', background: 'rgba(255, 255, 255, 0.05)', marginBottom: '2rem', borderLeft: '4px solid var(--primary)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', color: 'var(--primary)', fontWeight: 700 }}>
-                    <AlertCircle size={18} /> EXPLANATION
+                    <AlertCircle size={18} /> TECHNICAL RATIONALE
                   </div>
-                  <p style={{ color: 'var(--text-muted)' }}>{currentQuestion.explanation}</p>
+                  <p style={{ color: 'var(--text-muted)' }}>{q.explanation}</p>
                 </div>
                 
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                   <button onClick={nextQuestion} className="btn-primary" style={{ padding: '1rem 2.5rem' }}>
-                    {currentStep === examQuestions.length - 1 ? 'See Results' : 'Next Question'} <ArrowRight size={20} />
+                    {currentStep === examQuestions.length - 1 ? 'See Results' : 'Next Objective'} <ArrowRight size={20} />
                   </button>
                 </div>
               </motion.div>

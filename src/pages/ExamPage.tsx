@@ -141,9 +141,23 @@ export const ExamPage: React.FC = () => {
                 Mastery Key: <span style={{ color: '#10b981' }}>{getReviewText(q)}</span>
               </p>
               <div style={{ padding: '1.5rem', background: 'rgba(255,255,255,0.03)', borderRadius: 'var(--radius-sm)', borderLeft: '4px solid var(--primary)' }}>
-                <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: '1.6' }}>
-                  <strong style={{ color: 'var(--text)' }}>Technical Rationale:</strong> {q.explanation}
+                <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: '1.6', marginBottom: q.referenceUrl ? '1rem' : 0 }}>
+                  <span style={{ color: 'var(--primary)', fontWeight: 800 }}>EXPLANATION:</span> {q.explanation}
                 </p>
+                
+                {q.referenceUrl && (
+                  <div style={{ marginTop: '0.5rem', padding: '1rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)' }}>
+                    <p style={{ fontSize: '0.85rem', color: '#10b981', fontWeight: 600, marginBottom: '0.5rem' }}>Reference Context:</p>
+                    {q.referenceSnippet && (
+                      <p style={{ fontSize: '0.9rem', color: 'var(--text)', fontStyle: 'italic', marginBottom: '0.75rem', paddingLeft: '1rem', borderLeft: '2px solid #10b981' }}>
+                        "{q.referenceSnippet}"
+                      </p>
+                    )}
+                    <Link to={q.referenceUrl} target="_blank" style={{ fontSize: '0.85rem', color: 'var(--primary)', textDecoration: 'underline' }}>
+                      Open External Study Guide Link →
+                    </Link>
+                  </div>
+                )}
               </div>
             </div>
           ))}
@@ -250,6 +264,20 @@ export const ExamPage: React.FC = () => {
                     <AlertCircle size={18} /> TECHNICAL RATIONALE
                   </div>
                   <p style={{ color: 'var(--text-muted)' }}>{q.explanation}</p>
+                  
+                  {q.referenceUrl && (
+                    <div style={{ marginTop: '1.5rem', padding: '1rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)' }}>
+                      <p style={{ fontSize: '0.85rem', color: '#10b981', fontWeight: 600, marginBottom: '0.5rem' }}>Reference Context:</p>
+                      {q.referenceSnippet && (
+                        <p style={{ fontSize: '0.9rem', color: 'var(--text)', fontStyle: 'italic', marginBottom: '0.75rem', paddingLeft: '1rem', borderLeft: '2px solid #10b981' }}>
+                          "{q.referenceSnippet}"
+                        </p>
+                      )}
+                      <Link to={q.referenceUrl} target="_blank" style={{ fontSize: '0.85rem', color: 'var(--primary)', textDecoration: 'underline' }}>
+                        Read full breakdown in Study Guide →
+                      </Link>
+                    </div>
+                  )}
                 </div>
                 
                 <div style={{ display: 'flex', justifyContent: 'flex-end' }}>

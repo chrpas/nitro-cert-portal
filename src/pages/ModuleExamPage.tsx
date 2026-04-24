@@ -155,6 +155,14 @@ export const ModuleExamPage: React.FC = () => {
                   <p style={{ fontWeight: 700, marginBottom: '1rem', fontSize: '1.1rem' }}>{idx + 1}. {q.text}</p>
                   <p style={{ color: 'var(--primary)', fontWeight: 600, marginBottom: '0.5rem' }}>Correct Answer(s): {getReviewText(q)}</p>
                   <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: '1.6' }}>{q.explanation}</p>
+                  {q.referenceUrl && (
+                    <div style={{ marginTop: '1rem', padding: '1rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.2)' }}>
+                      {q.referenceSnippet && (
+                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', fontStyle: 'italic', marginBottom: '0.5rem', paddingLeft: '0.5rem', borderLeft: '2px solid #10b981' }}>"{q.referenceSnippet}"</p>
+                      )}
+                      <Link to={q.referenceUrl} target="_blank" style={{ fontSize: '0.8rem', color: 'var(--primary)' }}>Read in Study Guide →</Link>
+                    </div>
+                  )}
                 </div>
               ))}
            </div>
@@ -270,9 +278,24 @@ export const ModuleExamPage: React.FC = () => {
               animate={{ opacity: 1, height: 'auto' }}
               style={{ marginTop: '2rem', padding: '1.5rem', borderRadius: 'var(--radius-md)', background: 'rgba(255,255,255,0.03)', borderLeft: '4px solid var(--primary)' }}
             >
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: '1.6' }}>
+              <p style={{ color: 'var(--text-muted)', fontSize: '0.95rem', lineHeight: '1.6', marginBottom: q.referenceUrl ? '1rem' : 0 }}>
                 <span style={{ color: 'var(--primary)', fontWeight: 800 }}>EXPLANATION:</span> {q.explanation}
               </p>
+              
+              {q.referenceUrl && (
+                <div style={{ marginTop: '0.5rem', padding: '1rem', borderRadius: 'var(--radius-sm)', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--glass-border)' }}>
+                  <p style={{ fontSize: '0.85rem', color: '#10b981', fontWeight: 600, marginBottom: '0.5rem' }}>Reference:</p>
+                  {q.referenceSnippet && (
+                    <p style={{ fontSize: '0.9rem', color: 'var(--text)', fontStyle: 'italic', marginBottom: '0.75rem', paddingLeft: '1rem', borderLeft: '2px solid #10b981' }}>
+                      "{q.referenceSnippet}"
+                    </p>
+                  )}
+                  <Link to={q.referenceUrl} target="_blank" style={{ fontSize: '0.85rem', color: 'var(--primary)', textDecoration: 'underline' }}>
+                    Open Study Guide Reference →
+                  </Link>
+                </div>
+              )}
+
               <button 
                 onClick={nextQuestion} 
                 className="btn-primary" 

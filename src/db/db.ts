@@ -65,10 +65,10 @@ db.version(8).stores({
   modules: 'id, title, order'
 });
 
-db.version(9).stores({
+db.version(13).stores({
   modules: 'id, title, order'
 }).upgrade(tx => {
-  return tx.table('modules').clear(); // Clear to ingest the 500 massive query scale ref map
+  return tx.table('modules').clear();
 });
 
 export { db };

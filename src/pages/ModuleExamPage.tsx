@@ -1,73 +1,78 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, XCircle, ArrowLeft, RefreshCw, Trophy, Square, CheckSquare } from 'lucide-react';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, Question } from '../db/db';
+import { motion, AnimatePresence } from 'framer-motion';
+import { ArrowLeft, CheckCircle2, XCircle, RefreshCcw, CheckSquare, Square } from 'lucide-react';
 
 export const ModuleExamPage: React.FC = () => {
   const { moduleId } = useParams<{ moduleId: string }>();
-  const module = useLiveQuery(() => db.modules.get(moduleId || ''));
+  const module = useLiveQuery(() => db.modules.get(moduleId || ''), [moduleId]);
   
+  const [shuffledQuestions, setShuffledQuestions] = useState<Question[] | null>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
-  const [showResult, setShowResult] = useState(false);
-  const [score, setScore] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
   const [isAnswered, setIsAnswered] = useState(false);
-  const [shuffledQuestions, setShuffledQuestions] = useState<Question[] | null>(null);
+  const [score, setScore] = useState(0);
+  const [showResults, setShowResults] = useState(false);
 
-  React.useEffect(() => {
-    if (module && module.examQuestions && !shuffledQuestions) {
-      setShuffledQuestions([...module.examQuestions].sort(() => Math.random() - 0.5).slice(0, 10));
+  const shuffleArray = <T,>(array: T[]): T[] => {
+    const newArr = [...array];
+    for (let i = newArr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
+    }
+    return newArr;
+  };
+
+  const shuffleQuestion = (q: Question): Question => {
+    const originalOptions = [...q.options];
+    const indexedOptions = originalOptions.map((text, index) => ({ text, index }));
+    const shuffledIndexed = shuffleArray(indexedOptions);
+    const newOptions = shuffledIndexed.map(item => item.text);
+    
+    let newCorrectAnswer: number | number[];
+    if (Array.isArray(q.correctAnswer)) {
+      newCorrectAnswer = q.correctAnswer.map(originalIdx => 
+        shuffledIndexed.findIndex(item => item.index === originalIdx)
+      );
+    } else {
+      const originalIdx = q.correctAnswer;
+      newCorrectAnswer = shuffledIndexed.findIndex(item => item.index === originalIdx);
+    }
+
+    return { ...q, options: newOptions, correctAnswer: newCorrectAnswer };
+  };
+
+  useEffect(() => {
+    if (module?.examQuestions && !shuffledQuestions) {
+      const qs = shuffleArray([...module.examQuestions]).map(q => shuffleQuestion(q));
+      setShuffledQuestions(qs);
     }
   }, [module, shuffledQuestions]);
 
-  if (module === undefined) {
-    return (
-      <div className="container" style={{ paddingBottom: '8rem', paddingTop: '4rem', textAlign: 'center' }}>
-        <p>Loading module data...</p>
-      </div>
-    );
-  }
-
-  if (!module) return null;
-
-  if (!module.examQuestions || module.examQuestions.length === 0 || !shuffledQuestions) {
-    return (
-      <div className="container" style={{ textAlign: 'center', marginTop: '10rem' }}>
-        <h2>No Exam Available for this Module</h2>
-        <Link to={`/module/${moduleId}`} className="btn-primary" style={{ marginTop: '2rem' }}>
-          Back to Module
-        </Link>
-      </div>
-    );
-  }
+  if (!module || !shuffledQuestions) return <div className="container">Loading module exam...</div>;
 
   const questions = shuffledQuestions;
   const q = questions[currentQuestionIndex];
 
   const handleToggleAnswer = (index: number) => {
     if (isAnswered) return;
-
     if (q.type === 'multiple') {
       setSelectedAnswers(prev => 
         prev.includes(index) ? prev.filter(i => i !== index) : [...prev, index]
       );
     } else {
       setSelectedAnswers([index]);
-      const isCorrect = index === q.correctAnswer;
-      validateAnswer([index], isCorrect);
+      validateAnswer([index]);
     }
   };
 
-  const validateAnswer = (choices: number[], forceIsCorrect?: boolean) => {
+  const validateAnswer = (choices: number[]) => {
     setIsAnswered(true);
     let correct = false;
     
-    if (forceIsCorrect !== undefined) {
-      correct = forceIsCorrect;
-    } else if (Array.isArray(q.correctAnswer)) {
-      // Multiple answers: check if sets match
+    if (Array.isArray(q.correctAnswer)) {
       const correctSet = new Set(q.correctAnswer);
       const chosenSet = new Set(choices);
       correct = correctSet.size === chosenSet.size && [...correctSet].every(val => chosenSet.has(val));
@@ -81,24 +86,23 @@ export const ModuleExamPage: React.FC = () => {
   };
 
   const nextQuestion = () => {
-    if (currentQuestionIndex + 1 < questions.length) {
-      setCurrentQuestionIndex(currentQuestionIndex + 1);
+    if (currentQuestionIndex < questions.length - 1) {
+      setCurrentQuestionIndex(prev => prev + 1);
       setSelectedAnswers([]);
       setIsAnswered(false);
     } else {
-      setShowResult(true);
+      setShowResults(true);
     }
   };
 
-  const restartExam = () => {
-    if (module?.examQuestions) {
-      setShuffledQuestions([...module.examQuestions].sort(() => Math.random() - 0.5).slice(0, 10));
-    }
+  const resetExam = () => {
+    const qs = shuffleArray([...module.examQuestions!]).map(q => shuffleQuestion(q));
+    setShuffledQuestions(qs);
     setCurrentQuestionIndex(0);
-    setShowResult(false);
-    setScore(0);
     setSelectedAnswers([]);
     setIsAnswered(false);
+    setScore(0);
+    setShowResults(false);
   };
 
   const getReviewText = (question: Question) => {
@@ -108,44 +112,19 @@ export const ModuleExamPage: React.FC = () => {
     return question.options[question.correctAnswer as number];
   };
 
-  if (showResult) {
-    const passed = score >= questions.length * 0.7;
-
+  if (showResults) {
     return (
-      <div className="container" style={{ maxWidth: '800px', paddingBottom: '8rem' }}>
-        <motion.div
-           initial={{ opacity: 0, scale: 0.95 }}
-           animate={{ opacity: 1, scale: 1 }}
-           className="glass-card"
-           style={{ padding: '4rem', textAlign: 'center' }}
-        >
-          <div style={{ marginBottom: '2rem', display: 'flex', justifyContent: 'center' }}>
-            <div className="gradient-bg" style={{ width: '80px', height: '80px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Trophy size={40} color="white" />
-            </div>
-          </div>
-          
-          <h2 style={{ fontSize: '3rem', marginBottom: '1rem' }}>{module.title} Results</h2>
-          <p style={{ fontSize: '1.5rem', color: passed ? 'var(--primary)' : 'var(--secondary)', fontWeight: 700, marginBottom: '2rem' }}>
-            {passed ? 'MASTERY ACHIEVED!' : 'NEEDS REVIEW'}
-          </p>
-          
-          <div style={{ fontSize: '4rem', fontWeight: 800, marginBottom: '1rem' }}>
-            {score} / {questions.length}
-          </div>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '3rem' }}>
-            You mastered {Math.round((score / questions.length) * 100)}% of this module's objectives.
-          </p>
-
-          <div style={{ display: 'flex', gap: '1.5rem', justifyContent: 'center' }}>
-            <button onClick={restartExam} className="glass-card" style={{ padding: '1rem 2rem', display: 'flex', alignItems: 'center', gap: '0.5rem', color: 'white' }}>
-              <RefreshCw size={20} /> Retake
+      <div className="container" style={{ paddingBottom: '8rem' }}>
+        <header style={{ textAlign: 'center', marginBottom: '4rem' }}>
+          <h1 style={{ fontSize: '3rem', marginBottom: '1rem' }}>Module Mastery</h1>
+          <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)' }}>You scored {score} out of {questions.length}</p>
+          <div style={{ marginTop: '2rem', display: 'flex', justifyContent: 'center', gap: '1rem' }}>
+            <button onClick={resetExam} className="glass-card" style={{ padding: '0.8rem 1.5rem', color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <RefreshCcw size={18} /> Retake Exam
             </button>
-            <Link to={`/module/${module.id}`} className="btn-primary" style={{ padding: '1rem 2rem' }}>
-              Back to Roadmap
-            </Link>
+            <Link to="/exam" className="btn-primary" style={{ padding: '0.8rem 1.5rem' }}>Full Certification Hub</Link>
           </div>
-        </motion.div>
+        </header>
 
         <div style={{ marginTop: '4rem' }}>
            <h3 style={{ fontSize: '1.5rem', marginBottom: '2rem' }}>Objective Review</h3>

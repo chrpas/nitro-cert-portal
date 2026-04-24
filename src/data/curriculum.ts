@@ -1,51 +1,125 @@
 import { Module, Question } from '../db/db';
+import { examQuestions as allExamQuestions } from './exam';
 
-const baseModules = [
-  { id: "getting-started", title: "Getting Started", sections: [{ title: "Basics", items: ["Setting up the dev environment", "Changes in Nitro5"] }] },
-  { id: "contributing", title: "Contributing", sections: [{ title: "Nitro Community", items: ["Contributing to Nitro", "Nitrospects"] }] },
-  { id: "onboarding", title: "Onboarding", sections: [{ title: "Core Curriculum", items: ["Introduction to Nitro", "Development of Nitro", "Working in a Nitro project", "Single Page Application", "Migrations", "Jobs", "Queues", "Localization", "Troubleshooting", "Accessibility", "Integrations (API endpoints)", "Content index", "Content Processing", "Customers and Organizations", "Stock & Inventory", "Order flow", "A/B tests", "Backoffice"] }] },
-  { id: "developing", title: "Developing", sections: [{ title: "Backend Coding Guidelines", items: ["Coding guidelines (backend)", "Options", "Appsettings", "Using HttpClient", "Dependency Injection", "Packaging guidelines"] }, { title: "Frontend", items: ["Coding guidelines (frontend)", "CURRENT_PAGE and APP_SHELL_DATA", "Image resizing", "Font preloading", "Theming", "tstypegen", "Service worker", "Observables", "Server side rendering (ssr)"] }] },
-  { id: "how-tos", title: "How-tos", sections: [{ title: "Practical Guides", items: ["Add payments/shipments/markets (countries.json)", "Work with Azure blob storage", "Using ngrok", "Uploading a database to DXP"] }] },
-  { id: "features", title: "Features", sections: [{ title: "E-commerce Capabilities", items: ["Abandoned cart notifications", "B2B", "Esales", "Feature toggles", "Search", "Structured data (JSON-LD)", "Virtual categories"] }] },
-  { id: "nitro-projects", title: "Nitro Projects", sections: [{ title: "Project Management", items: ["Starting a new Nitro5 project", "Detailing a Nitro5 project", "Go-live checklist", "List of all Nitro Projects"] }] },
-  { id: "setting-up", title: "Setting up...", sections: [{ title: "Infrastucture & Services", items: ["Setting up TeamCity", "Setting up Octopus", "Setting up SendGrid", "Setting up RayGun", "Setting up DXP", "Setting up Find"] }] },
-  { id: "upgrade", title: "Upgrade to Nitro5", sections: [{ title: "Migration Paths", items: ["Upgrading to Nitro5", "Backend upgrade", "Migrate DXP project"] }] },
-  { id: "core-team", title: "Nitro Core Team", sections: [{ title: "Internal Operations", items: ["The Nitro Core Team", "Release notes generation"] }] }
-];
+/**
+ * Automagically distributes the 154-question bank into specialized modules
+ * based on keyword patterns in the question text.
+ */
+const categorizeQuestions = (questions: Question[]): Record<string, Question[]> => {
+  const categories: Record<string, Question[]> = {
+    "getting-started": [],
+    "contributing": [],
+    "onboarding": [],
+    "developing": [],
+    "how-tos": [],
+    "features": [],
+    "nitro-projects": [],
+    "setting-up": [],
+    "upgrade": [],
+    "core-team": [],
+  };
 
-const generateQuestionsForModule = (moduleId: string, moduleTitle: string): Question[] => {
-  const generated: Question[] = [];
-  
-  // Base themes to iterate and expand into 50 questions
-  const themes = [
-    { type: 'single', t: `Regarding ${moduleTitle}, which core service orchestrates this primary mechanic?`, o: ["DI Container", "Azure Service Bus", "Vite SSR", "SQL Server"], c: 0, r: `Dependency Injection manages ${moduleTitle} effectively.` },
-    { type: 'boolean', t: `True or False: The ${moduleTitle} specification restricts memory caching natively.`, o: ["True", "False"], c: 1, r: `False. Robust caching acts as the foundation.` },
-    { type: 'multiple', t: `Select all valid dependencies structurally required for ${moduleTitle}:`, o: [".NET 8 SDK", "Node LTS", "Optimizely License", "PHP"], c: [0, 1, 2], r: `Standard modern enterprise prerequisites apply cleanly here.` },
-    { type: 'single', t: `When debugging ${moduleTitle}, what log level explicitly reveals system initialization?`, o: ["Warning", "Verbose", "Information", "Fatal"], c: 1, r: `Verbose logs specifically trace low-level configurations securely.` },
-    { type: 'boolean', t: `Is ${moduleTitle} compatible with legacy ASP.NET WebForms?`, o: ["True", "False"], c: 1, r: `False. Nitro exclusively binds to modern headless pipelines.` }
-  ];
+  if (!questions || questions.length === 0) return categories;
 
-  let idCounter = 1;
-  // Let's generate exactly 50 uniquely phrased questions per module
-  for (let i = 0; i < 10; i++) {
-    themes.forEach((theme) => {
-      generated.push({
-        id: idCounter++,
-        type: theme.type as any,
-        text: `[Instance ${i+1}] ${theme.t}`,
-        options: [...theme.o],
-        correctAnswer: theme.c,
-        explanation: `${theme.r} (Variation ${i+1}).`,
-        referenceUrl: `/module/${moduleId}`,
-        referenceSnippet: `As documented in the massive Study Guide architecture, ${moduleTitle} heavily relies on this implementation strategy continuously.`
-      });
-    });
-  }
+  questions.forEach(q => {
+    const text = q.text.toLowerCase();
+    
+    if (text.includes("setup") || text.includes("kestrel") || text.includes("cli") || text.includes("vite") || q.id <= 15) {
+      categories["getting-started"].push(q);
+    } else if (text.includes("pr ") || text.includes("pull request") || text.includes("gitflow") || text.includes("nitrospect") || text.includes("branch")) {
+      categories["contributing"].push(q);
+    } else if (text.includes("spa") || text.includes("hydration") || text.includes("migration") || text.includes("queue") || text.includes("job")) {
+       categories["onboarding"].push(q);
+    } else if (text.includes("di ") || text.includes("httpclient") || text.includes("typescript") || text.includes("ssr") || text.includes("viewmodel") || text.includes("tstypegen")) {
+       categories["developing"].push(q);
+    } else if (text.includes("azure") || text.includes("keyvault") || text.includes("dxp") || text.includes("ngrok") || text.includes("application insights")) {
+       categories["how-tos"].push(q);
+    } else if (text.includes("b2b") || text.includes("payment") || text.includes("elevate") || text.includes("esales") || text.includes("discount") || text.includes("promotion")) {
+       categories["features"].push(q);
+    } else if (text.includes("go-live") || text.includes("ttl") || text.includes("theming") || text.includes("design") || text.includes("accessibility") || text.includes("aria-")) {
+       categories["nitro-projects"].push(q);
+    } else if (text.includes("teamcity") || text.includes("octopus") || text.includes("raygun") || text.includes("sendgrid") || text.includes("monitoring")) {
+       categories["setting-up"].push(q);
+    } else if (text.includes("upgrade-assistant") || text.includes("legacy") || text.includes("version")) {
+       categories["upgrade"].push(q);
+    } else {
+       categories["core-team"].push(q);
+    }
+  });
 
-  return generated;
+  return categories;
 };
 
-export const curriculumHierarchy: Module[] = baseModules.map(m => ({
-  ...m,
-  examQuestions: generateQuestionsForModule(m.id, m.title)
-}));
+const categorizedPool = categorizeQuestions(allExamQuestions);
+
+// Enrichment helper to ensure every question has a valid reference card
+const enrich = (qs: Question[], modId: string): Question[] => {
+  return qs.map(q => ({
+    ...q,
+    referenceUrl: q.referenceUrl || `/module/${modId}`,
+    referenceSnippet: q.referenceSnippet || q.explanation.split('.')[0] + '.'
+  }));
+};
+
+export const curriculumHierarchy: Module[] = [
+  {
+    id: "getting-started",
+    title: "Environment Setup",
+    sections: [{ title: "Prerequisites", items: ["Local Infrastructure", "Tools"] }],
+    examQuestions: enrich(categorizedPool["getting-started"], "getting-started")
+  },
+  {
+    id: "contributing",
+    title: "Contributing to Core",
+    sections: [{ title: "Workflow", items: ["Git", "Standards"] }],
+    examQuestions: enrich(categorizedPool["contributing"], "contributing")
+  },
+  {
+    id: "onboarding",
+    title: "Onboarding Basics",
+    sections: [{ title: "Systems", items: ["SPA Basics", "Background Logistics"] }],
+    examQuestions: enrich(categorizedPool["onboarding"], "onboarding")
+  },
+  {
+    id: "developing",
+    title: "Backend Development",
+    sections: [{ title: "Patterns", items: ["Dependency Injection", "Data Handling"] }],
+    examQuestions: enrich(categorizedPool["developing"], "developing")
+  },
+  {
+    id: "how-tos",
+    title: "Infrastructure How-Tos",
+    sections: [{ title: "Deployment", items: ["Azure & DXP Operations"] }],
+    examQuestions: enrich(categorizedPool["how-tos"], "how-tos")
+  },
+  {
+    id: "features",
+    title: "Product Features",
+    sections: [{ title: "Commerce", items: ["Marketing & B2B Solutions"] }],
+    examQuestions: enrich(categorizedPool["features"], "features")
+  },
+  {
+    id: "nitro-projects",
+    title: "Frontend & UI Strategy",
+    sections: [{ title: "Presentation", items: ["Performance & Accessibility"] }],
+    examQuestions: enrich(categorizedPool["nitro-projects"], "nitro-projects")
+  },
+  {
+    id: "setting-up",
+    title: "External Integrations",
+    sections: [{ title: "Monitoring", items: ["Error Tracking & Notifications"] }],
+    examQuestions: enrich(categorizedPool["setting-up"], "setting-up")
+  },
+  {
+    id: "upgrade",
+    title: "Migration & Continuity",
+    sections: [{ title: "Upgrading", items: ["Legacy Transitions"] }],
+    examQuestions: enrich(categorizedPool["upgrade"], "upgrade")
+  },
+  {
+    id: "core-team",
+    title: "Technical Excellence",
+    sections: [{ title: "Internal", items: ["Architectural Standards"] }],
+    examQuestions: enrich(categorizedPool["core-team"], "core-team")
+  }
+];

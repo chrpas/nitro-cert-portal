@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CheckCircle2, XCircle, RefreshCcw, ArrowRight, Trophy, AlertCircle, Square, CheckSquare } from 'lucide-react';
+import { CheckCircle2, XCircle, RefreshCcw, ArrowRight, Trophy, AlertCircle, Square, CheckSquare, Zap } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { db, Question } from '../db/db';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -9,24 +9,99 @@ export const ExamPage: React.FC = () => {
   const allModules = useLiveQuery(() => db.modules.toArray());
   const [shuffledQuestions, setShuffledQuestions] = useState<Question[] | null>(null);
 
-  React.useEffect(() => {
-    if (allModules && !shuffledQuestions && allModules.length > 0) {
-      const allQs = allModules.flatMap(m => m.examQuestions || []);
-      const picked = [...allQs].sort(() => Math.random() - 0.5).slice(0, 100);
-      setShuffledQuestions(picked);
+  const shuffleArray = <T,>(array: T[]): T[] => {
+    const newArr = [...array];
+    for (let i = newArr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [newArr[i], newArr[j]] = [newArr[j], newArr[i]];
     }
-  }, [allModules, shuffledQuestions]);
+    return newArr;
+  };
+
+  const shuffleQuestion = (q: Question): Question => {
+    const originalOptions = [...q.options];
+    const indexedOptions = originalOptions.map((text, index) => ({ text, index }));
+    const shuffledIndexed = shuffleArray(indexedOptions);
+    const newOptions = shuffledIndexed.map(item => item.text);
+    
+    let newCorrectAnswer: number | number[];
+    if (Array.isArray(q.correctAnswer)) {
+      newCorrectAnswer = q.correctAnswer.map(originalIdx => 
+        shuffledIndexed.findIndex(item => item.index === originalIdx)
+      );
+    } else {
+      const originalIdx = q.correctAnswer;
+      newCorrectAnswer = shuffledIndexed.findIndex(item => item.index === originalIdx);
+    }
+
+    return { ...q, options: newOptions, correctAnswer: newCorrectAnswer };
+  };
 
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
   const [isAnswered, setIsAnswered] = useState(false);
   const [score, setScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
+  const [examType, setExamType] = useState<'global' | 'module' | null>(null);
+
+  const startGlobalExam = () => {
+    if (allModules) {
+      const allQs = allModules.flatMap(m => m.examQuestions || []);
+      const picked = shuffleArray([...allQs]).slice(0, 100);
+      const randomized = picked.map(q => shuffleQuestion(q));
+      setShuffledQuestions(randomized);
+    }
+    setExamType('global');
+    setCurrentStep(0);
+    setScore(0);
+    setShowResults(false);
+    setSelectedAnswers([]);
+    setIsAnswered(false);
+  };
+
+  if (!examType) {
+    return (
+      <div className="container" style={{ paddingBottom: '8rem' }}>
+        <h1 style={{ fontSize: '3.5rem', marginBottom: '1.5rem' }}>Exam <span className="gradient-text">Hub</span></h1>
+        <p style={{ fontSize: '1.2rem', color: 'var(--text-muted)', marginBottom: '4rem', maxWidth: '600px' }}>
+          Test your mastery. Choose to take the global randomized certification or dive into a specific technical module.
+        </p>
+
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginBottom: '6rem' }}>
+          <motion.div 
+            whileHover={{ y: -5 }}
+            className="glass-card" 
+            style={{ padding: '3rem', border: '2px solid var(--primary)', cursor: 'pointer' }}
+            onClick={startGlobalExam}
+          >
+            <Zap size={40} color="var(--primary)" style={{ marginBottom: '1.5rem' }} />
+            <h2 style={{ fontSize: '1.8rem', marginBottom: '1rem' }}>Master Certification</h2>
+            <p style={{ color: 'var(--text-muted)', marginBottom: '2rem', lineHeight: '1.6' }}>
+              The ultimate 100-question randomized pool spanned across all curriculum modules. Requires 80% to pass.
+            </p>
+            <button className="btn-primary">Start Certification</button>
+          </motion.div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            <h3 style={{ fontSize: '1.4rem', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Specialized Exams</h3>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+              {allModules?.map(m => (
+                <Link key={m.id} to={`/module-exam/${m.id}`} className="glass-card" style={{ padding: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center', color: 'white' }}>
+                  <span style={{ fontWeight: 600 }}>{m.title} Exam</span>
+                  <ArrowRight size={18} color="var(--primary)" />
+                </Link>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (!shuffledQuestions || shuffledQuestions.length === 0) {
     return (
       <div className="container" style={{ paddingBottom: '8rem', paddingTop: '4rem', textAlign: 'center' }}>
-        <p>Loading certification exam pool...</p>
+        <p>Initializing exam session...</p>
       </div>
     );
   }
@@ -78,16 +153,7 @@ export const ExamPage: React.FC = () => {
   };
 
   const resetExam = () => {
-    if (allModules) {
-      const allQs = allModules.flatMap(m => m.examQuestions || []);
-      const picked = [...allQs].sort(() => Math.random() - 0.5).slice(0, 100);
-      setShuffledQuestions(picked);
-    }
-    setCurrentStep(0);
-    setSelectedAnswers([]);
-    setIsAnswered(false);
-    setScore(0);
-    setShowResults(false);
+    startGlobalExam();
   };
 
   const getReviewText = (question: Question) => {
@@ -119,7 +185,10 @@ export const ExamPage: React.FC = () => {
           </p>
           <div style={{ display: 'flex', justifyContent: 'center', gap: '1rem' }}>
             <button onClick={resetExam} className="glass-card" style={{ padding: '1rem 2rem', color: 'white', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <RefreshCcw size={18} /> Retake Certification
+              <RefreshCcw size={18} /> Retake
+            </button>
+            <button onClick={() => setExamType(null)} className="glass-card" style={{ padding: '1rem 2rem', color: 'white' }}>
+              Exam Hub
             </button>
             <Link to="/" className="btn-primary" style={{ padding: '1rem 2rem' }}>
               Return to Portal

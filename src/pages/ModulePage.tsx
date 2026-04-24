@@ -15,10 +15,10 @@ export const ModulePage: React.FC = () => {
   const module = useLiveQuery(() => db.modules.get(id || ''));
   const allModules = useLiveQuery(() => db.modules.orderBy('order').toArray());
 
-  const activeContent = useLiveQuery(() => {
-    if (!selectedArticle) return Promise.resolve(undefined);
-    return db.articles.get(selectedArticle.replace(/\//g, ' '));
-  }, [selectedArticle]);
+  const activeContent = useLiveQuery(
+    () => (selectedArticle ? db.articles.get(selectedArticle.replace(/\//g, ' ')) : undefined),
+    [selectedArticle]
+  );
 
   if (module === undefined || allModules === undefined) {
     return (

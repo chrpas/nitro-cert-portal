@@ -1,17 +1,37 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, XCircle, RefreshCcw, ArrowRight, Trophy, AlertCircle, Square, CheckSquare } from 'lucide-react';
-import { examQuestions } from '../data/exam';
 import { Link } from 'react-router-dom';
-import { Question } from '../db/db';
+import { db, Question } from '../db/db';
+import { useLiveQuery } from 'dexie-react-hooks';
 
 export const ExamPage: React.FC = () => {
+  const allModules = useLiveQuery(() => db.modules.toArray());
+  const [shuffledQuestions, setShuffledQuestions] = useState<Question[] | null>(null);
+
+  React.useEffect(() => {
+    if (allModules && !shuffledQuestions && allModules.length > 0) {
+      const allQs = allModules.flatMap(m => m.examQuestions || []);
+      const picked = [...allQs].sort(() => Math.random() - 0.5).slice(0, 100);
+      setShuffledQuestions(picked);
+    }
+  }, [allModules, shuffledQuestions]);
+
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
   const [isAnswered, setIsAnswered] = useState(false);
   const [score, setScore] = useState(0);
   const [showResults, setShowResults] = useState(false);
 
+  if (!shuffledQuestions || shuffledQuestions.length === 0) {
+    return (
+      <div className="container" style={{ paddingBottom: '8rem', paddingTop: '4rem', textAlign: 'center' }}>
+        <p>Loading certification exam pool...</p>
+      </div>
+    );
+  }
+
+  const examQuestions = shuffledQuestions;
   const q = examQuestions[currentStep];
 
   const handleToggleAnswer = (index: number) => {
@@ -58,6 +78,11 @@ export const ExamPage: React.FC = () => {
   };
 
   const resetExam = () => {
+    if (allModules) {
+      const allQs = allModules.flatMap(m => m.examQuestions || []);
+      const picked = [...allQs].sort(() => Math.random() - 0.5).slice(0, 100);
+      setShuffledQuestions(picked);
+    }
     setCurrentStep(0);
     setSelectedAnswers([]);
     setIsAnswered(false);

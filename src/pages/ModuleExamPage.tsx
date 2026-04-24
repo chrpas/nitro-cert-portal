@@ -14,6 +14,13 @@ export const ModuleExamPage: React.FC = () => {
   const [score, setScore] = useState(0);
   const [selectedAnswers, setSelectedAnswers] = useState<number[]>([]);
   const [isAnswered, setIsAnswered] = useState(false);
+  const [shuffledQuestions, setShuffledQuestions] = useState<Question[] | null>(null);
+
+  React.useEffect(() => {
+    if (module && module.examQuestions && !shuffledQuestions) {
+      setShuffledQuestions([...module.examQuestions].sort(() => Math.random() - 0.5).slice(0, 10));
+    }
+  }, [module, shuffledQuestions]);
 
   if (module === undefined) {
     return (
@@ -25,7 +32,7 @@ export const ModuleExamPage: React.FC = () => {
 
   if (!module) return null;
 
-  if (!module.examQuestions || module.examQuestions.length === 0) {
+  if (!module.examQuestions || module.examQuestions.length === 0 || !shuffledQuestions) {
     return (
       <div className="container" style={{ textAlign: 'center', marginTop: '10rem' }}>
         <h2>No Exam Available for this Module</h2>
@@ -36,7 +43,7 @@ export const ModuleExamPage: React.FC = () => {
     );
   }
 
-  const questions = module.examQuestions;
+  const questions = shuffledQuestions;
   const q = questions[currentQuestionIndex];
 
   const handleToggleAnswer = (index: number) => {
@@ -84,6 +91,9 @@ export const ModuleExamPage: React.FC = () => {
   };
 
   const restartExam = () => {
+    if (module?.examQuestions) {
+      setShuffledQuestions([...module.examQuestions].sort(() => Math.random() - 0.5).slice(0, 10));
+    }
     setCurrentQuestionIndex(0);
     setShowResult(false);
     setScore(0);

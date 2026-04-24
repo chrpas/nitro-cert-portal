@@ -41,8 +41,24 @@ db.version(2).stores({
 
 db.version(3).stores({
   modules: 'id, title, order'
+});
+
+db.version(4).stores({
+  modules: 'id, title, order'
+});
+
+db.version(5).stores({
+  modules: 'id, title, order'
+});
+
+db.version(6).stores({
+  modules: 'id, title, order'
+});
+
+db.version(7).stores({
+  modules: 'id, title, order'
 }).upgrade(tx => {
-  return tx.table('modules').clear(); // Clear to force re-seed with order
+  return tx.table('modules').clear(); // Clear to force re-seed of the massive 400 question bank
 });
 
 export { db };

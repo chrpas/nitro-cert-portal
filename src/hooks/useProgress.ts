@@ -38,6 +38,7 @@ export const useProgress = () => {
   };
 
   const getModuleProgress = (moduleId: string, totalItems: number) => {
+    if (totalItems === 0) return 0;
     const completedCount = progress.completedItems.filter(id => id.startsWith(`${moduleId}:`)).length;
     return Math.round((completedCount / totalItems) * 100);
   };

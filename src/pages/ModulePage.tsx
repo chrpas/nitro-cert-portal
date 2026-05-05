@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import { motion, AnimatePresence } from 'framer-motion';
 import { CheckCircle2, ChevronRight, List, ArrowLeft } from 'lucide-react';
 import { useProgress } from '../hooks/useProgress';
 import { useLiveQuery } from 'dexie-react-hooks';
@@ -16,7 +15,18 @@ export const ModulePage: React.FC = () => {
   const allModules = useLiveQuery(() => db.modules.orderBy('order').toArray());
 
   const activeContent = useLiveQuery(
-    () => (selectedArticle ? db.articles.get(selectedArticle.replace(/\//g, ' ')) : undefined),
+    async () => {
+      if (!selectedArticle) return null;
+      const normalized = selectedArticle.trim();
+      const withSpaces = normalized.replace(/-/g, ' ');
+      const withHyphens = normalized.replace(/ /g, '-');
+      
+      let article = await db.articles.get(withSpaces);
+      if (!article) article = await db.articles.get(withHyphens);
+      if (!article) article = await db.articles.get(normalized);
+      
+      return article || null;
+    },
     [selectedArticle]
   );
 
@@ -37,10 +47,7 @@ export const ModulePage: React.FC = () => {
     <div className="container">
       <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: '4rem' }}>
         {/* Main Content */}
-        <motion.div
-           initial={{ opacity: 0, y: 20 }}
-           animate={{ opacity: 1, y: 0 }}
-        >
+        <div className="animate-fade-in">
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '2rem' }}>
             <Link to="/" style={{ color: 'var(--text-muted)', fontSize: '0.9rem' }}>Curriculum</Link>
             <ChevronRight size={14} color="var(--text-muted)" />
@@ -99,7 +106,7 @@ export const ModulePage: React.FC = () => {
               </div>
             ))}
           </div>
-        </motion.div>
+        </div>
 
         {/* Right Sidebar - Full Hierarchy & Progress */}
         <aside>
@@ -110,10 +117,8 @@ export const ModulePage: React.FC = () => {
                   <span style={{ fontWeight: 700, color: 'var(--primary)', fontSize: '0.9rem' }}>{currentModuleProgress}%</span>
                </div>
                <div style={{ height: '6px', background: 'var(--border)', borderRadius: '3px', overflow: 'hidden' }}>
-                  <motion.div 
-                    initial={{ width: 0 }}
-                    animate={{ width: `${currentModuleProgress}%` }}
-                    style={{ height: '100%' }} 
+                  <div 
+                    style={{ height: '100%', width: `${currentModuleProgress}%`, transition: 'width 0.5s ease' }} 
                     className="gradient-bg" 
                   />
                </div>
@@ -159,55 +164,67 @@ export const ModulePage: React.FC = () => {
       </div>
 
       {/* Article Detail Overlay */}
-      <AnimatePresence>
-        {activeContent && (
-          <>
-            <motion.div 
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
+      {selectedArticle && (
+        <>
+          <div 
+            onClick={() => setSelectedArticle(null)}
+            style={{ 
+              position: 'fixed', 
+              inset: 0, 
+              background: 'rgba(0,0,0,0.8)', 
+              backdropFilter: 'blur(8px)', 
+              zIndex: 2000,
+              cursor: 'pointer'
+            }}
+          />
+          <div
+            className="animate-fade-in"
+            style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: '600px', background: 'var(--surface)', borderLeft: '1px solid var(--border)', zIndex: 2001, padding: '4rem', overflowY: 'auto', boxShadow: '-10px 0 30px rgba(0,0,0,0.5)' }}
+          >
+            <button 
               onClick={() => setSelectedArticle(null)}
-              style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(8px)', zIndex: 2000 }}
-            />
-            <motion.div
-              initial={{ opacity: 0, x: '100%' }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: '100%' }}
-              transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-              style={{ position: 'fixed', top: 0, right: 0, bottom: 0, width: '600px', background: 'var(--surface)', borderLeft: '1px solid var(--border)', zIndex: 2001, padding: '4rem', overflowY: 'auto' }}
+              style={{ position: 'absolute', top: '2rem', left: '2rem', color: 'var(--text-muted)', background: 'transparent' }}
             >
-              <button 
-                onClick={() => setSelectedArticle(null)}
-                style={{ position: 'absolute', top: '2rem', left: '2rem', color: 'var(--text-muted)', background: 'transparent' }}
-              >
-                <ArrowLeft size={24} />
-              </button>
+              <ArrowLeft size={24} />
+            </button>
 
-              <span style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Nitro technical Guide</span>
-              <h2 style={{ fontSize: '2.5rem', marginTop: '1rem', marginBottom: '2rem' }}>{activeContent.title}</h2>
-              
-              <div className="markdown-body" style={{ color: 'var(--text-muted)', lineHeight: '1.8' }}>
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                  {activeContent.content}
-                </ReactMarkdown>
+            {activeContent === undefined ? (
+              <div style={{ marginTop: '4rem', textAlign: 'center' }}>
+                <p style={{ color: 'var(--text-muted)' }}>Searching database...</p>
               </div>
-              
-              <div style={{ marginTop: '4rem', padding: '2rem', borderRadius: 'var(--radius-md)', background: 'rgba(99, 102, 241, 0.05)', border: '1px solid var(--primary)', textAlign: 'center' }}>
-                <p style={{ fontWeight: 600, marginBottom: '1rem' }}>Done with this topic?</p>
-                <button 
-                  onClick={() => {
-                    // Logic to mark as done and close
-                    setSelectedArticle(null);
-                  }}
-                  className="btn-primary"
-                >
-                  Confirm Understanding
-                </button>
+            ) : !activeContent ? (
+              <div style={{ marginTop: '4rem', textAlign: 'center' }}>
+                <h2 style={{ marginBottom: '1rem' }}>Article Not Found</h2>
+                <p style={{ color: 'var(--text-muted)' }}>Could not find an article matching: <strong>{selectedArticle}</strong></p>
+                <p style={{ marginTop: '2rem', fontSize: '0.9rem' }}>Try running <code>npm run sync-db</code> again and refreshing.</p>
               </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+            ) : (
+              <>
+                <span style={{ color: 'var(--primary)', fontWeight: 800, fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Nitro technical Guide</span>
+                <h2 style={{ fontSize: '2.5rem', marginTop: '1rem', marginBottom: '2rem' }}>{activeContent.title}</h2>
+                
+                <div className="markdown-body" style={{ color: 'var(--text-muted)', lineHeight: '1.8' }}>
+                  <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                    {activeContent.content}
+                  </ReactMarkdown>
+                </div>
+                
+                <div style={{ marginTop: '4rem', padding: '2rem', borderRadius: 'var(--radius-md)', background: 'rgba(99, 102, 241, 0.05)', border: '1px solid var(--primary)', textAlign: 'center' }}>
+                  <p style={{ fontWeight: 600, marginBottom: '1rem' }}>Done with this topic?</p>
+                  <button 
+                    onClick={() => {
+                      setSelectedArticle(null);
+                    }}
+                    className="btn-primary"
+                  >
+                    Confirm Understanding
+                  </button>
+                </div>
+              </>
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 };

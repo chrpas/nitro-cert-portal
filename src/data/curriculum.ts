@@ -65,61 +65,61 @@ export const curriculumHierarchy: Module[] = [
   {
     id: "getting-started",
     title: "Environment Setup",
-    sections: [{ title: "Prerequisites", items: ["Local Infrastructure", "Tools"] }],
+    sections: [{ title: "Prerequisites", items: ["Setting up the dev environment", "How to setup Visual Studio Code", "Troubleshooting"] }],
     examQuestions: enrich(categorizedPool["getting-started"], "getting-started")
   },
   {
     id: "contributing",
     title: "Contributing to Core",
-    sections: [{ title: "Workflow", items: ["Git", "Standards"] }],
+    sections: [{ title: "Workflow", items: ["Contributing to Nitro", "Coding guidelines", "Frontend Guidelines", "PR checklist"] }],
     examQuestions: enrich(categorizedPool["contributing"], "contributing")
   },
   {
     id: "onboarding",
     title: "Onboarding Basics",
-    sections: [{ title: "Systems", items: ["SPA Basics", "Background Logistics"] }],
+    sections: [{ title: "Systems", items: ["Introduction to Nitro", "Single Page Application", "Background Logistics"] }],
     examQuestions: enrich(categorizedPool["onboarding"], "onboarding")
   },
   {
     id: "developing",
     title: "Backend Development",
-    sections: [{ title: "Patterns", items: ["Dependency Injection", "Data Handling"] }],
+    sections: [{ title: "Patterns", items: ["Dependency injection", "Data Handling", "Queues", "Migrations"] }],
     examQuestions: enrich(categorizedPool["developing"], "developing")
   },
   {
     id: "how-tos",
     title: "Infrastructure How-Tos",
-    sections: [{ title: "Deployment", items: ["Azure & DXP Operations"] }],
+    sections: [{ title: "Deployment", items: ["Setting up DXP", "Azure Blob Storage", "Application Insights & Logging"] }],
     examQuestions: enrich(categorizedPool["how-tos"], "how-tos")
   },
   {
     id: "features",
     title: "Product Features",
-    sections: [{ title: "Commerce", items: ["Marketing & B2B Solutions"] }],
+    sections: [{ title: "Commerce", items: ["B2B", "Search", "Localization", "Order flow"] }],
     examQuestions: enrich(categorizedPool["features"], "features")
   },
   {
     id: "nitro-projects",
     title: "Frontend & UI Strategy",
-    sections: [{ title: "Presentation", items: ["Performance & Accessibility"] }],
+    sections: [{ title: "Presentation", items: ["Accessibility", "Site theming", "React 19 & TypeScript 5 upgrade guide"] }],
     examQuestions: enrich(categorizedPool["nitro-projects"], "nitro-projects")
   },
   {
     id: "setting-up",
     title: "External Integrations",
-    sections: [{ title: "Monitoring", items: ["Error Tracking & Notifications"] }],
+    sections: [{ title: "Monitoring", items: ["Setting up Octopus Deploy", "Setting up Raygun", "Setting up Sendgrid"] }],
     examQuestions: enrich(categorizedPool["setting-up"], "setting-up")
   },
   {
     id: "upgrade",
     title: "Migration & Continuity",
-    sections: [{ title: "Upgrading", items: ["Legacy Transitions"] }],
+    sections: [{ title: "Upgrading", items: ["Upgrade codebase to Nitro5", "Run upgrade assistant"] }],
     examQuestions: enrich(categorizedPool["upgrade"], "upgrade")
   },
   {
     id: "core-team",
     title: "Technical Excellence",
-    sections: [{ title: "Internal", items: ["Architectural Standards"] }],
+    sections: [{ title: "Internal", items: ["Architectural Standards", "Package structure"] }],
     examQuestions: enrich(categorizedPool["core-team"], "core-team")
   }
 ];

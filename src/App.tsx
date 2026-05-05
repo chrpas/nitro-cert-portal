@@ -14,26 +14,21 @@ const App: React.FC = () => {
     const seedDb = async () => {
       try {
         // Seed Wiki Articles
-        const articleCount = await db.articles.count();
-        if (articleCount === 0) {
-          const res = await fetch('/NitroCertification.json');
-          if (res.ok) {
-            const data = await res.json();
-            // NitroCertification.json is an array of WikiArticle
-            await db.articles.bulkAdd(data);
-            console.log('Seeded Articles to NitroCertification DB');
-          }
+        const res = await fetch('/NitroCertification.json');
+        if (res.ok) {
+          const data = await res.json();
+          // Always refresh articles to stay in sync with NitroCertification.json
+          await db.articles.clear();
+          await db.articles.bulkPut(data);
+          console.log(`Synced ${data.length} Articles`);
         }
 
         // Seed Curriculum & Exams
-        const moduleCount = await db.modules.count();
-        const firstModule = await db.modules.toCollection().first();
-        if (moduleCount === 0 || (firstModule && firstModule.order === undefined)) {
-          if (moduleCount > 0) await db.modules.clear();
-          const mappedCurriculum = curriculumHierarchy.map((m, i) => ({ ...m, order: i }));
-          await db.modules.bulkAdd(mappedCurriculum);
-          console.log('Seeded Curriculum & Exams with Order to NitroCertification DB');
-        }
+        // Always refresh modules to pick up curriculumHierarchy changes
+        await db.modules.clear();
+        const mappedCurriculum = curriculumHierarchy.map((m, i) => ({ ...m, order: i }));
+        await db.modules.bulkAdd(mappedCurriculum);
+        console.log('Synced Curriculum & Modules');
       } catch (err) {
         console.error('Database seeding error:', err);
       }
